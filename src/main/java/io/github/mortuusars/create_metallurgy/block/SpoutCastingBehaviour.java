@@ -1,4 +1,4 @@
-package io.github.mortuusars.createmetallurgy.block;
+package io.github.mortuusars.create_metallurgy.block;
 
 import com.simibubi.create.api.behaviour.BlockSpoutingBehaviour;
 import com.simibubi.create.content.fluids.spout.SpoutBlockEntity;

@@ -1,4 +1,4 @@
-package io.github.mortuusars.createmetallurgy.block;
+package io.github.mortuusars.create_metallurgy.block;
 
 import com.simibubi.create.AllFluids;
 import com.simibubi.create.AllItems;
@@ -6,7 +6,7 @@ import com.simibubi.create.foundation.blockEntity.SmartBlockEntity;
 import com.simibubi.create.foundation.blockEntity.behaviour.BlockEntityBehaviour;
 import com.simibubi.create.foundation.item.ItemHelper;
 import com.simibubi.create.foundation.item.SmartInventory;
-import io.github.mortuusars.createmetallurgy.component.CastingTableFluidHandler;
+import io.github.mortuusars.create_metallurgy.component.CastingTableFluidHandler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -31,7 +31,10 @@ public class CastingTableBlockEntity extends SmartBlockEntity {
     ItemStack moldStack;
     SmartInventory outputInventory;
     CastingTableFluidHandler fluidHandler;
+    int totalSolidifyingTicks;
     int solidifyingTicks;
+
+    int fillingTicks;
 
     FluidStack fluidStack;
     ItemStack resultItemStack;
@@ -86,7 +89,9 @@ public class CastingTableBlockEntity extends SmartBlockEntity {
         resultItemStack = ItemStack.of(tag.getCompound("Result"));
         fluidStack = FluidStack.loadFluidStackFromNBT(tag.getCompound("Fluid"));
 
+        totalSolidifyingTicks = tag.getInt("TotalSolidifyingTicks");
         solidifyingTicks = tag.getInt("SolidifyingTicks");
+        fillingTicks = tag.getInt("FillingTicks");
     }
 
     @Override
@@ -99,8 +104,12 @@ public class CastingTableBlockEntity extends SmartBlockEntity {
         compound.put("Result", resultItemStack.save(new CompoundTag()));
         compound.put("Fluid", fluidStack.writeToNBT(new CompoundTag()));
 
+        if (totalSolidifyingTicks > -1)
+            compound.putInt("TotalSolidifyingTicks", totalSolidifyingTicks);
         if (solidifyingTicks > -1)
             compound.putInt("SolidifyingTicks", solidifyingTicks);
+        if (fillingTicks > -1)
+            compound.putInt("FillingTicks", fillingTicks);
     }
 
     @Override
@@ -128,6 +137,9 @@ public class CastingTableBlockEntity extends SmartBlockEntity {
     public void fill(FluidStack fluidStack) {
         this.fluidStack = fluidStack;
         this.solidifyingTicks = 40;
+        this.totalSolidifyingTicks = solidifyingTicks;
+
+        this.fillingTicks = 10;
 
         this.resultItemStack = new ItemStack(AllItems.BAR_OF_CHOCOLATE.get());
         notifyUpdate();
@@ -140,15 +152,23 @@ public class CastingTableBlockEntity extends SmartBlockEntity {
         if (moldStack.isEmpty() || this.fluidStack.isEmpty() || solidifyingTicks == Integer.MIN_VALUE || !outputInventory.isEmpty())
             return;
 
+        if (fillingTicks > 0) {
+            fillingTicks--;
+            return;
+        }
+
         solidifyingTicks--;
 
         if (solidifyingTicks <= 0) {
             outputInventory.setItem(0, getResultItemStack());
 
-            level.playSound(null, getBlockPos(), SoundEvents.FIRE_EXTINGUISH, SoundSource.BLOCKS, 0.5f,
+            if (level != null) {
+                level.playSound(null, getBlockPos(), SoundEvents.FIRE_EXTINGUISH, SoundSource.BLOCKS, 0.5f,
                     level.getRandom().nextFloat() * 0.3f + 0.9f);
+            }
 
             this.fluidStack = FluidStack.EMPTY;
+            this.totalSolidifyingTicks = Integer.MIN_VALUE;
             this.solidifyingTicks = Integer.MIN_VALUE;
             this.resultItemStack = ItemStack.EMPTY;
         }

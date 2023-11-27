@@ -1,14 +1,13 @@
-package io.github.mortuusars.createmetallurgy.block;
+package io.github.mortuusars.create_metallurgy.block;
 
 import com.simibubi.create.AllShapes;
 import com.simibubi.create.AllSoundEvents;
 import com.simibubi.create.content.equipment.wrench.IWrenchable;
 import com.simibubi.create.foundation.block.IBE;
 import com.simibubi.create.foundation.block.ProperWaterloggedBlock;
-import io.github.mortuusars.createmetallurgy.Metallurgy;
+import io.github.mortuusars.create_metallurgy.Metallurgy;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
@@ -27,6 +26,11 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.NotNull;
 
 public class CastingTableBlock extends Block implements IBE<CastingTableBlockEntity>, IWrenchable, ProperWaterloggedBlock {
+    public static final VoxelShape SHAPE = new AllShapes.Builder(AllShapes.CASING_13PX.get(Direction.UP))
+            .erase(2, 11, 2, 14, 13, 14)
+            .erase(0, 0, 4, 16, 2, 12)
+            .erase(4, 0, 0, 12, 2, 16)
+            .build();
 
     public CastingTableBlock(Properties properties) {
         super(properties);
@@ -42,10 +46,11 @@ public class CastingTableBlock extends Block implements IBE<CastingTableBlockEnt
         return Metallurgy.BlockEntities.CASTING_TABLE.get();
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public @NotNull VoxelShape getShape(@NotNull BlockState state, @NotNull BlockGetter getter, @NotNull BlockPos pos,
                                         @NotNull CollisionContext context) {
-        return AllShapes.CASING_13PX.get(Direction.UP);
+        return SHAPE;
     }
 
     @SuppressWarnings("deprecation")

@@ -1,7 +1,7 @@
-package io.github.mortuusars.createmetallurgy.component;
+package io.github.mortuusars.create_metallurgy.component;
 
 import com.simibubi.create.foundation.fluid.FluidHelper;
-import io.github.mortuusars.createmetallurgy.block.CastingTableBlockEntity;
+import io.github.mortuusars.create_metallurgy.block.CastingTableBlockEntity;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.capability.templates.VoidFluidHandler;
 
