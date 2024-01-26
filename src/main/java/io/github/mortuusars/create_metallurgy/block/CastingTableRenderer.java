@@ -29,12 +29,15 @@ public class CastingTableRenderer extends SafeBlockEntityRenderer<CastingTableBl
     public void renderSafe(CastingTableBlockEntity be, float partialTicks, PoseStack poseStack, MultiBufferSource bufferSource, int light, int overlay) {
 
 
-        if (!be.fluidStack.isEmpty()) {
+        if (!be.fluidStack.isEmpty() && be.fillingTicks <= 15) {
             float solidifyingProgress = (be.solidifyingTicks - partialTicks) / ((float)be.totalSolidifyingTicks);
-            float fillLevel = Mth.clamp((be.fillingTicks - partialTicks) / 10f, 0f, 1f);
-            fillLevel = fillLevel * fillLevel * fillLevel;
+            solidifyingProgress = 1;
+            float fillLevel = Mth.clamp((be.fillingTicks - partialTicks) / 15f, 0f, 1f);
+//            fillLevel = fillLevel * fillLevel * fillLevel;
+            fillLevel = fillLevel < 0.5 ? 4 * fillLevel * fillLevel * fillLevel : (float) (1 - Math.pow(-2 * fillLevel + 2, 3) / 2);
             fillLevel = 1f - fillLevel;
-            renderFluidBox(be.fluidStack, 2 / 16f, (11 + fillLevel * 0.7f)/16f, 2/16f, 14/16f, (11 + fillLevel * 0.8f)/16f, 14/16f,
+
+            renderFluidBox(be.fluidStack, 2 / 16f, 11.02f/16f, 2/16f, 14/16f, (11.02f + fillLevel * 0.85f)/16f, 14/16f,
                     FluidRenderer.getFluidBuilder(bufferSource), poseStack, light, true, solidifyingProgress);
         }
 
@@ -51,7 +54,7 @@ public class CastingTableRenderer extends SafeBlockEntityRenderer<CastingTableBl
         if (!be.outputInventory.getStackInSlot(0).isEmpty()) {
             ItemRenderer itemRenderer = Minecraft.getInstance().getItemRenderer();
             poseStack.pushPose();
-            poseStack.translate(0.5, 11/16f + (0.4/16f), 0.5);
+            poseStack.translate(0.5, 11/16f + (0.55/16f), 0.5);
             poseStack.scale(12/16f, 12/16f, 12/16f);
             poseStack.mulPose(Vector3f.XP.rotationDegrees(90));
             itemRenderer.renderStatic(be.outputInventory.getStackInSlot(0), ItemTransforms.TransformType.FIXED, light, overlay, poseStack, bufferSource, 0);

@@ -1,6 +1,7 @@
 package io.github.mortuusars.create_metallurgy;
 
 import com.simibubi.create.AllCreativeModeTabs;
+import com.simibubi.create.Create;
 import com.simibubi.create.api.behaviour.BlockSpoutingBehaviour;
 import com.simibubi.create.content.redstone.displayLink.source.ItemNameDisplaySource;
 import com.simibubi.create.foundation.data.AssetLookup;
@@ -8,27 +9,39 @@ import com.simibubi.create.foundation.data.CreateRegistrate;
 import com.simibubi.create.foundation.data.SharedProperties;
 import com.tterrag.registrate.util.entry.BlockEntityEntry;
 import com.tterrag.registrate.util.entry.BlockEntry;
+import com.tterrag.registrate.util.entry.ItemEntry;
 import io.github.mortuusars.create_metallurgy.block.CastingTableBlock;
 import io.github.mortuusars.create_metallurgy.block.CastingTableBlockEntity;
 import io.github.mortuusars.create_metallurgy.block.CastingTableRenderer;
 import io.github.mortuusars.create_metallurgy.block.SpoutCastingBehaviour;
+import io.github.mortuusars.create_metallurgy.recipe.CastingRecipe;
+import io.github.mortuusars.create_metallurgy.recipe.MetallurgyRecipes;
+import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.ItemTags;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.crafting.RecipeSerializer;
+import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.material.MaterialColor;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.registries.DeferredRegister;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.RegistryObject;
 
 import static com.simibubi.create.content.redstone.displayLink.AllDisplayBehaviours.assignDataBehaviour;
 import static com.simibubi.create.foundation.data.ModelGen.customItemModel;
 import static com.simibubi.create.foundation.data.TagGen.pickaxeOnly;
 
-@Mod(Metallurgy.MODID)
+@Mod(Metallurgy.ID)
 public class Metallurgy
 {
-    public static final String MODID = "create_metallurgy";
-    public static final CreateRegistrate REGISTRATE = CreateRegistrate.create(MODID);
+    public static final String ID = "create_metallurgy";
+    public static final CreateRegistrate REGISTRATE = CreateRegistrate.create(ID);
 
     public Metallurgy()
     {
@@ -37,6 +50,8 @@ public class Metallurgy
 
         Blocks.register();
         BlockEntities.register();
+        Items.register();
+        MetallurgyRecipes.register(modEventBus);
 
         BlockSpoutingBehaviour.addCustomSpoutInteraction(resource("table_casting"), new SpoutCastingBehaviour());
 
@@ -44,7 +59,7 @@ public class Metallurgy
     }
 
     public static ResourceLocation resource(String path) {
-        return new ResourceLocation(MODID, path);
+        return new ResourceLocation(ID, path);
     }
 
     public static class Blocks {
@@ -73,5 +88,27 @@ public class Metallurgy
                 .register();
 
         public static void register() {}
+    }
+
+    public static class Items {
+        public static final ItemEntry<Item> ANDESITE_INGOT_MOLD = REGISTRATE
+                .item("andesite_ingot_mold", Item::new)
+                .tag(Tags.Items.MOLDS)
+                .tab(() -> AllCreativeModeTabs.BASE_CREATIVE_TAB)
+                .register();
+
+        public static final ItemEntry<Item> ANDESITE_NUGGET_MOLD = REGISTRATE
+                .item("andesite_nugget_mold", Item::new)
+                .tag(Tags.Items.MOLDS)
+                .tab(() -> AllCreativeModeTabs.BASE_CREATIVE_TAB)
+                .register();
+
+        public static void register() { }
+    }
+
+    public static class Tags {
+        public static class Items {
+            public static final TagKey<Item> MOLDS = ItemTags.create(resource("molds"));
+        }
     }
 }

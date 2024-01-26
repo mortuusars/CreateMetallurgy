@@ -1,12 +1,15 @@
 package io.github.mortuusars.create_metallurgy.block;
 
-import com.simibubi.create.AllFluids;
+import com.google.common.base.Preconditions;
 import com.simibubi.create.AllItems;
 import com.simibubi.create.foundation.blockEntity.SmartBlockEntity;
 import com.simibubi.create.foundation.blockEntity.behaviour.BlockEntityBehaviour;
+import com.simibubi.create.foundation.fluid.FluidIngredient;
 import com.simibubi.create.foundation.item.ItemHelper;
 import com.simibubi.create.foundation.item.SmartInventory;
 import io.github.mortuusars.create_metallurgy.component.CastingTableFluidHandler;
+import io.github.mortuusars.create_metallurgy.recipe.CastingRecipe;
+import io.github.mortuusars.create_metallurgy.recipe.MetallurgyRecipes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -14,6 +17,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.Containers;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.capabilities.Capability;
@@ -22,11 +26,15 @@ import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.ItemStackHandler;
+import net.minecraftforge.items.wrapper.RecipeWrapper;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.List;
 
 public class CastingTableBlockEntity extends SmartBlockEntity {
+    private static final RecipeWrapper RECIPE_WRAPPER = new RecipeWrapper(new ItemStackHandler(1));
 
     ItemStack moldStack;
     SmartInventory outputInventory;
@@ -41,6 +49,9 @@ public class CastingTableBlockEntity extends SmartBlockEntity {
 
     protected LazyOptional<IItemHandler> itemCapability;
     protected LazyOptional<IFluidHandler> fluidCapability;
+
+    @Nullable
+    private CastingRecipe cachedRecipe;
 
     public CastingTableBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
@@ -122,55 +133,97 @@ public class CastingTableBlockEntity extends SmartBlockEntity {
     }
 
     public boolean canFillWithFluid(FluidStack fluid) {
-        if (moldStack.isEmpty() || !fluidStack.isEmpty() || !outputInventory.getStackInSlot(0).isEmpty())
-            return false;
-
-        if (fluid.getFluid().getFluidType().equals(AllFluids.CHOCOLATE.getType()))
-            return true;
-        return false;
+        return level != null && !moldStack.isEmpty() && solidifyingTicks < 0 && outputInventory.getStackInSlot(0).isEmpty();
     }
 
-    public int getRequiredFluidAmount() {
-        return 200;
+    protected @Nullable CastingRecipe getMatchingRecipe(FluidStack fluid) {
+        if (level == null)
+            return null;
+
+        RECIPE_WRAPPER.setItem(0, moldStack);
+
+        if (cachedRecipe != null) {
+            if (recipeMatches(cachedRecipe, moldStack, fluid))
+                return cachedRecipe;
+            else
+                cachedRecipe = null;
+        }
+
+        List<Recipe<RecipeWrapper>> castingRecipes = level.getRecipeManager()
+                .getRecipesFor(MetallurgyRecipes.CASTING.getType(), RECIPE_WRAPPER, level);
+
+        for (Recipe<RecipeWrapper> recipe : castingRecipes) {
+            CastingRecipe castingRecipe = ((CastingRecipe) recipe);
+            if (recipeMatches(castingRecipe, moldStack, fluid)) {
+                cachedRecipe = castingRecipe;
+                return castingRecipe;
+            }
+        }
+
+        return null;
     }
 
-    public void fill(FluidStack fluidStack) {
-        this.fluidStack = fluidStack;
-        this.solidifyingTicks = 40;
-        this.totalSolidifyingTicks = solidifyingTicks;
+    private boolean recipeMatches(CastingRecipe castingRecipe, ItemStack mold, FluidStack fluid) {
+        return level != null && castingRecipe.matches(RECIPE_WRAPPER, level) && castingRecipe.getRequiredFluid().test(fluid);
+    }
 
-        this.fillingTicks = 10;
+    public int tryFill(FluidStack fluidStack, boolean simulate) {
+        if (!canFillWithFluid(fluidStack))
+            return 0;
 
-        this.resultItemStack = new ItemStack(AllItems.BAR_OF_CHOCOLATE.get());
-        notifyUpdate();
+        @Nullable CastingRecipe recipe = getMatchingRecipe(fluidStack);
+
+        if (recipe == null)
+            return 0;
+
+        if (!simulate) {
+            this.fluidStack = fluidStack;
+            this.solidifyingTicks = recipe.getProcessingDuration();
+            this.totalSolidifyingTicks = solidifyingTicks;
+
+            this.resultItemStack = recipe.getResultItem().copy();
+            notifyUpdate();
+        }
+        else {
+            this.fluidStack = fluidStack;
+            this.fillingTicks = 18;
+            notifyUpdate();
+        }
+
+        return recipe.getRequiredFluid().getRequiredAmount();
     }
 
     @Override
     public void tick() {
         super.tick();
 
-        if (moldStack.isEmpty() || this.fluidStack.isEmpty() || solidifyingTicks == Integer.MIN_VALUE || !outputInventory.isEmpty())
-            return;
-
         if (fillingTicks > 0) {
             fillingTicks--;
             return;
         }
 
-        solidifyingTicks--;
+        if (solidifyingTicks)
 
-        if (solidifyingTicks <= 0) {
-            outputInventory.setItem(0, getResultItemStack());
+        if (moldStack.isEmpty() || this.fluidStack.isEmpty() || !outputInventory.isEmpty())
+            return;
 
-            if (level != null) {
-                level.playSound(null, getBlockPos(), SoundEvents.FIRE_EXTINGUISH, SoundSource.BLOCKS, 0.5f,
-                    level.getRandom().nextFloat() * 0.3f + 0.9f);
+        if (solidifyingTicks > 0) {
+            solidifyingTicks--;
+
+            if (solidifyingTicks <= 0) {
+                outputInventory.setItem(0, getResultItemStack());
+
+                if (level != null) {
+                    level.playSound(null, getBlockPos(), SoundEvents.FIRE_EXTINGUISH, SoundSource.BLOCKS, 0.5f,
+                            level.getRandom().nextFloat() * 0.3f + 0.9f);
+                }
+
+                this.fluidStack = FluidStack.EMPTY;
+                this.totalSolidifyingTicks = Integer.MIN_VALUE;
+                this.solidifyingTicks = Integer.MIN_VALUE;
+                this.resultItemStack = ItemStack.EMPTY;
+                notifyUpdate();
             }
-
-            this.fluidStack = FluidStack.EMPTY;
-            this.totalSolidifyingTicks = Integer.MIN_VALUE;
-            this.solidifyingTicks = Integer.MIN_VALUE;
-            this.resultItemStack = ItemStack.EMPTY;
         }
     }
 

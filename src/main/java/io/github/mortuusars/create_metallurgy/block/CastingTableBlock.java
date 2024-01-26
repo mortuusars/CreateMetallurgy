@@ -25,7 +25,7 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.NotNull;
 
-public class CastingTableBlock extends Block implements IBE<CastingTableBlockEntity>, IWrenchable, ProperWaterloggedBlock {
+public class CastingTableBlock extends Block implements IBE<CastingTableBlockEntity>, IWrenchable/*, ProperWaterloggedBlock*/ {
     public static final VoxelShape SHAPE = new AllShapes.Builder(AllShapes.CASING_13PX.get(Direction.UP))
             .erase(2, 11, 2, 14, 13, 14)
             .erase(0, 0, 4, 16, 2, 12)
@@ -70,19 +70,17 @@ public class CastingTableBlock extends Block implements IBE<CastingTableBlockEnt
         }
 
         if (castingTableBlockEntity.moldStack.isEmpty()) {
-            if (player.getItemInHand(hand).is(Items.GLASS_PANE)) {
-                castingTableBlockEntity.moldStack = player.getItemInHand(hand).split(1);
-                castingTableBlockEntity.notifyUpdate();
-                AllSoundEvents.DEPOT_PLOP.play(level, player, pos);
-                return InteractionResult.SUCCESS;
-            }
-            return InteractionResult.PASS;
+            castingTableBlockEntity.moldStack = player.getItemInHand(hand).split(1);
+            castingTableBlockEntity.notifyUpdate();
+            AllSoundEvents.DEPOT_PLOP.play(level, player, pos);
+            return InteractionResult.SUCCESS;
         }
 
-        if (player.isSecondaryUseActive() && player.getItemInHand(hand).isEmpty() && castingTableBlockEntity.solidifyingTicks == Integer.MIN_VALUE) {
-            player.setItemInHand(hand, castingTableBlockEntity.moldStack);
+        if (player.isSecondaryUseActive() && player.getItemInHand(hand).isEmpty() && castingTableBlockEntity.solidifyingTicks <= 0) {
+            player.getInventory().placeItemBackInInventory(castingTableBlockEntity.moldStack);
             castingTableBlockEntity.moldStack = ItemStack.EMPTY;
             castingTableBlockEntity.notifyUpdate();
+            level.playSound(player, player, SoundEvents.ITEM_PICKUP, SoundSource.PLAYERS, 0.2f, 1f + level.getRandom().nextFloat());
             return InteractionResult.SUCCESS;
         }
 

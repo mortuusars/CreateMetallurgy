@@ -1,6 +1,5 @@
 package io.github.mortuusars.create_metallurgy.component;
 
-import com.simibubi.create.foundation.fluid.FluidHelper;
 import io.github.mortuusars.create_metallurgy.block.CastingTableBlockEntity;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.capability.templates.VoidFluidHandler;
@@ -15,14 +14,6 @@ public class CastingTableFluidHandler extends VoidFluidHandler {
 
     @Override
     public int fill(FluidStack resource, FluidAction action) {
-        int requiredAmount = castingTableBlockEntity.getRequiredFluidAmount();
-
-        if (resource.getAmount() < requiredAmount)
-            return 0;
-
-        if (action.execute())
-            castingTableBlockEntity.fill(FluidHelper.copyStackWithAmount(resource, requiredAmount));
-
-        return requiredAmount;
+        return castingTableBlockEntity.tryFill(resource, action.simulate());
     }
 }

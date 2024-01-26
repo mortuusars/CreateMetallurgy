@@ -27,20 +27,28 @@ public class SpoutCastingBehaviour extends BlockSpoutingBehaviour {
             return 0;
         if (!handler.isFluidValid(0, availableFluid))
             return 0;
-        if (!castingTableBlockEntity.canFillWithFluid(availableFluid))
-            return 0;
 
         FluidStack containedFluid = handler.getFluidInTank(0);
         if (!(containedFluid.isEmpty() || containedFluid.isFluidEqual(availableFluid)))
             return 0;
 
+        int filledAmount = handler.fill(availableFluid, simulate ? IFluidHandler.FluidAction.SIMULATE : IFluidHandler.FluidAction.EXECUTE);
+
+//        if (filledAmount > 0 && simulate) {
+//            castingTableBlockEntity.start
+//        }
+
+        return filledAmount;
+
+//
+
         // Do not fill if it would only partially fill the table (unless > 1000mb)
-        int amount = availableFluid.getAmount();
-        if (amount < 1000
-                && handler.fill(FluidHelper.copyStackWithAmount(availableFluid, amount + 1), IFluidHandler.FluidAction.SIMULATE) > amount)
-            return 0;
+//        int amount = availableFluid.getAmount();
+//        if (amount < 1000
+//                && handler.fill(FluidHelper.copyStackWithAmount(availableFluid, amount + 1), IFluidHandler.FluidAction.SIMULATE) > amount)
+//            return 0;
 
         // Return amount filled into the table/basin
-        return handler.fill(availableFluid, simulate ? IFluidHandler.FluidAction.SIMULATE : IFluidHandler.FluidAction.EXECUTE);
+//        return handler.fill(availableFluid, simulate ? IFluidHandler.FluidAction.SIMULATE : IFluidHandler.FluidAction.EXECUTE);
     }
 }

@@ -1,0 +1,19 @@
+{
+  "type": "create_metallurgy:casting",
+  "ingredients": [
+    {
+      "item": "create_metallurgy:andesite_ingot_mold"
+    },
+    {
+      "amount": 250,
+      "fluid": "create:chocolate",
+      "nbt": {}
+    }
+  ],
+  "processingTime": 50,
+  "results": [
+    {
+      "item": "create:bar_of_chocolate"
+    }
+  ]
+}
